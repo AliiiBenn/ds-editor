@@ -13,6 +13,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/componen
 import Link from 'next/link';
 import type { Language } from '@/app/[language]/page';
 import { usePython } from '@/hooks/use-python';
+import { useJavascript } from '@/hooks/use-javascript';
 
 interface LanguageEditorProps {
   language: Language;
@@ -21,19 +22,32 @@ interface LanguageEditorProps {
 
 export function LanguageEditor({ language, defaultCode }: LanguageEditorProps) {
   const [code, setCode] = useState(defaultCode);
-  const { runPython, outputs, isLoading, error, isInitialized } = usePython();
+  const { runPython, outputs: pythonOutputs, isLoading: isPythonLoading, isInitialized: isPythonInitialized } = usePython();
+  const { runJavascript, outputs: jsOutputs, isLoading: isJsLoading, isInitialized: isJsInitialized } = useJavascript();
 
   const handleRunCode = useCallback(async () => {
-    if (language === 'python') {
-      try {
+    try {
+      if (language === 'python') {
         await runPython(code);
-      } catch (err) {
-        console.error('Failed to run Python code:', err);
+      } else if (language === 'javascript') {
+        await runJavascript(code);
       }
+    } catch (err) {
+      console.error(`Failed to run ${language} code:`, err);
     }
-  }, [language, code, runPython]);
+  }, [language, code, runPython, runJavascript]);
 
-  const canRunPython = language === 'python' && isInitialized && !isLoading;
+  const canRun = language === 'python' ? (isPythonInitialized && !isPythonLoading) :
+                 language === 'javascript' ? (isJsInitialized && !isJsLoading) :
+                 false;
+
+  const isLoading = language === 'python' ? isPythonLoading :
+                   language === 'javascript' ? isJsLoading :
+                   false;
+
+  const outputs = language === 'python' ? pythonOutputs :
+                 language === 'javascript' ? jsOutputs :
+                 [];
 
   return (
     <SidebarProvider className="min-h-screen" defaultOpen={false}>
@@ -68,8 +82,8 @@ export function LanguageEditor({ language, defaultCode }: LanguageEditorProps) {
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={30} minSize={20}>
               <Terminal 
-                outputs={language === 'python' ? outputs : []}
-                onRun={canRunPython ? handleRunCode : undefined}
+                outputs={outputs}
+                onRun={canRun ? handleRunCode : undefined}
                 isRunning={isLoading}
               />
             </ResizablePanel>

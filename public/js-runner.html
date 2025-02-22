@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JavaScript Runner</title>
+</head>
+<body>
+    <script>
+        // Setup communication with parent
+        window.addEventListener('message', async (event) => {
+            // Only accept messages from our parent
+            if (event.source !== window.parent) return;
+
+            let output = '';
+            
+            // Create a controlled console object
+            const console = {
+                log: (...args) => {
+                    output += args.map(arg => 
+                        typeof arg === 'string' ? arg : JSON.stringify(arg)
+                    ).join(' ') + '\n';
+                    window.parent.postMessage({ type: 'output', content: output }, '*');
+                },
+                error: (...args) => {
+                    output += args.map(arg => 
+                        typeof arg === 'string' ? arg : JSON.stringify(arg)
+                    ).join(' ') + '\n';
+                    window.parent.postMessage({ type: 'output', content: output }, '*');
+                },
+                warn: (...args) => {
+                    output += args.map(arg => 
+                        typeof arg === 'string' ? arg : JSON.stringify(arg)
+                    ).join(' ') + '\n';
+                    window.parent.postMessage({ type: 'output', content: output }, '*');
+                },
+                info: (...args) => {
+                    output += args.map(arg => 
+                        typeof arg === 'string' ? arg : JSON.stringify(arg)
+                    ).join(' ') + '\n';
+                    window.parent.postMessage({ type: 'output', content: output }, '*');
+                }
+            };
+
+            if (event.data.type === 'execute') {
+                try {
+                    // Create a new function with controlled scope
+                    const runner = new Function('console', event.data.code);
+                    await runner(console);
+                    window.parent.postMessage({ type: 'completed', content: output }, '*');
+                } catch (error) {
+                    window.parent.postMessage({ type: 'error', error: error.message }, '*');
+                }
+            }
+        });
+
+        // Signal ready
+        window.parent.postMessage({ type: 'ready' }, '*');
+    </script>
+</body>
+</html> 

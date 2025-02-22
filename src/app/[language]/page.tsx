@@ -33,13 +33,23 @@ export const SUPPORTED_LANGUAGES = {
 
 export type Language = keyof typeof SUPPORTED_LANGUAGES;
 
-export default async function LanguagePage({ params }: { params: { language: string } }) {
-  const language = params.language as Language;
+interface PageProps {
+  params: Promise<{ language: string }>;
+}
 
-  // Validate language
-  if (!SUPPORTED_LANGUAGES[language]) {
+export default async function LanguagePage({ params }: PageProps) {
+  // Await and validate params
+  const { language: rawLanguage } = await params;
+  
+  // Type guard for language
+  function isValidLanguage(lang: string): lang is Language {
+    return lang in SUPPORTED_LANGUAGES;
+  }
+
+  if (!isValidLanguage(rawLanguage)) {
     notFound();
   }
 
+  const language = rawLanguage;
   return <LanguageEditor language={language} defaultCode={SUPPORTED_LANGUAGES[language].defaultCode} />;
 } 
