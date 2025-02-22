@@ -81,7 +81,7 @@ export function usePython() {
     }
 
     const runId = generateUUID();
-    let output = '';
+    const outputChunks: string[] = [];
     let hasOutput = false;
 
     setOutputs((prev) => [
@@ -94,9 +94,12 @@ export function usePython() {
     ]);
 
     try {
+      // Setup stdout to handle each line separately
       pyodide.setStdout({
         batched: (text: string) => {
-          output += text;
+          // Split the text into lines and add them to our chunks
+          const lines = text.split(/\r?\n/);
+          outputChunks.push(...lines);
           hasOutput = true;
         },
       });
@@ -116,21 +119,23 @@ export function usePython() {
 
       await pyodide.runPythonAsync(code);
 
-      // Remove trailing newline if present
-      if (output.endsWith('\n')) {
-        output = output.slice(0, -1);
+      // Filter out empty lines at the end
+      while (outputChunks.length > 0 && outputChunks[outputChunks.length - 1] === '') {
+        outputChunks.pop();
       }
+
+      const finalOutput = outputChunks.join('\n');
 
       setOutputs((prev) => [
         ...prev.filter((output) => output.id !== runId),
         {
           id: runId,
-          content: hasOutput ? output : null,
+          content: hasOutput ? finalOutput : null,
           status: 'completed',
         },
       ]);
 
-      return { success: true, runId, output };
+      return { success: true, runId, output: finalOutput };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred while running the code';
       

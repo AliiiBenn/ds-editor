@@ -12,15 +12,34 @@ interface TerminalProps {
 
 export function Terminal({ outputs, onRun, isRunning }: TerminalProps) {
   const renderContent = (output: Output) => {
-    if (output.status === 'in_progress') return 'Running...';
-    if (output.status === 'completed' && output.content === null) return 'No output';
-    if (!output.content) return '';
+    if (output.status === 'in_progress') {
+      return (
+        <div className="flex items-center gap-2">
+          <span className="text-zinc-500">$</span>
+          <span className="text-zinc-200">Running...</span>
+        </div>
+      );
+    }
 
+    if (output.status === 'completed' && output.content === null) {
+      return (
+        <div className="flex items-center gap-2">
+          <span className="text-zinc-500">$</span>
+          <span className="text-zinc-200">No output</span>
+        </div>
+      );
+    }
+
+    if (!output.content) return null;
+
+    // Split content into lines and render each line
     return output.content.split('\n').map((line, i) => (
-      <div key={i} className="flex items-center gap-2">
-        <span className="text-zinc-500">$</span>
-        <span className={output.status === 'failed' ? 'text-red-400' : 'text-zinc-200'}>
-          {line}
+      <div key={i} className="flex items-start gap-2">
+        <span className="text-zinc-500 select-none">$</span>
+        <span 
+          className={`${output.status === 'failed' ? 'text-red-400' : 'text-zinc-200'} whitespace-pre-wrap`}
+        >
+          {line || ' '}
         </span>
       </div>
     ));
